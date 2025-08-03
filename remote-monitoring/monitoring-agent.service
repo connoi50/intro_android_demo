@@ -1,0 +1,25 @@
+[Unit]
+Description=Remote Systemd Service Monitoring Agent
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/opt/monitoring-agent
+ExecStart=/usr/bin/python3 /opt/monitoring-agent/monitoring-agent.py --service myapp --port 9100
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/log
+
+[Install]
+WantedBy=multi-user.target
