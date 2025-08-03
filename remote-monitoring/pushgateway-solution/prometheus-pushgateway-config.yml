@@ -1,0 +1,50 @@
+# Prometheus configuration for push-based remote systemd service monitoring
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093
+
+# Rule files
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus Pushgateway (collects metrics from remote agents)
+  - job_name: 'pushgateway'
+    honor_labels: true  # Important: preserve labels from pushed metrics
+    static_configs:
+      - targets: ['pushgateway:9091']  # Replace with your Pushgateway IP/hostname
+        labels:
+          job: 'pushgateway'
+    scrape_interval: 15s
+    metrics_path: /metrics
+    scheme: http
+    
+    # Optional: Basic authentication if needed
+    # basic_auth:
+    #   username: 'monitoring'
+    #   password: 'password'
+    
+    # Optional: TLS configuration if using HTTPS
+    # tls_config:
+    #   insecure_skip_verify: true
+
+  # Self-monitoring of Prometheus
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 15s
+
+  # Optional: Node exporter for additional system metrics
+  # - job_name: 'node-exporter'
+  #   static_configs:
+  #     - targets: ['localhost:9100']
+  #   scrape_interval: 15s
