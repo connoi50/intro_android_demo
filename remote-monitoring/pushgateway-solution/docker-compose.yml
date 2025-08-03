@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  # Prometheus Pushgateway
+  pushgateway:
+    image: prom/pushgateway:v1.6.0
+    container_name: prometheus-pushgateway
+    ports:
+      - "9091:9091"
+    volumes:
+      - pushgateway_data:/data
+    restart: unless-stopped
+    command:
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+      - '--persistence.file=/data/pushgateway.db'
+    networks:
+      - monitoring
+
+  # Optional: Prometheus (if you want to run it locally)
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus-pushgateway-config.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    networks:
+      - monitoring
+    depends_on:
+      - pushgateway
+
+  # Optional: Grafana (if you want to run it locally)
+  grafana:
+    image: grafana/grafana:10.0.0
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana-dashboard.json:/etc/grafana/provisioning/dashboards/dashboard.json
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    restart: unless-stopped
+    networks:
+      - monitoring
+    depends_on:
+      - prometheus
+
+volumes:
+  pushgateway_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  monitoring:
+    driver: bridge

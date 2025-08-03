@@ -1,0 +1,68 @@
+# Prometheus configuration for remote systemd service monitoring
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093
+
+# Rule files
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Remote systemd service monitoring agent
+  - job_name: 'remote-systemd-monitoring'
+    static_configs:
+      - targets: ['REMOTE_MACHINE_IP:9100']  # Replace with actual remote machine IP
+        labels:
+          instance: 'remote-myapp-server'
+          service: 'myapp'
+          environment: 'production'
+    scrape_interval: 30s
+    metrics_path: /metrics
+    scheme: http
+    
+    # Optional: Basic authentication if needed
+    # basic_auth:
+    #   username: 'monitoring'
+    #   password: 'password'
+    
+    # Optional: TLS configuration if using HTTPS
+    # tls_config:
+    #   insecure_skip_verify: true
+    
+    # Relabeling rules
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        regex: '([^:]+)(?::\d+)?'
+        replacement: '${1}'
+      
+      # Add custom labels
+      - source_labels: [__address__]
+        target_label: __metrics_path__
+        regex: '([^:]+):(\d+)'
+        replacement: '/metrics'
+      
+      # Add service name label
+      - target_label: service_name
+        replacement: 'myapp'
+
+  # Optional: Self-monitoring of Prometheus
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 15s
+
+  # Optional: Node exporter for additional system metrics
+  # - job_name: 'node-exporter'
+  #   static_configs:
+  #     - targets: ['localhost:9100']
+  #   scrape_interval: 15s
